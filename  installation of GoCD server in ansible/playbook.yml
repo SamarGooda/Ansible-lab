@@ -1,0 +1,36 @@
+---
+- hosts: web
+  remote_user: ec2-user
+  tasks:
+  - name: upgrade all packages
+    become: yes
+    yum:
+      name: '*'
+      state: latest
+  - name: Download server of go cd
+    become: yes
+    get_url:
+        url: https://download.gocd.org/gocd.repo
+        dest: /etc/yum.repos.d/gocd.repo
+  - name: ensure gocd is at the latest version
+    become: yes
+    yum:
+      name: go-server
+      state: latest
+  - name: ensure gocd-server is running
+    become: yes
+    service:
+      name: go-server
+      state: started
+      enabled: yes
+  - name: download go-agent
+    become: yes
+    yum:
+     name: go-agent
+     state: present
+  - name: ensure gocd-agent is running
+    become: yes
+    service:
+      name: go-agent
+      state: started
+      enabled: yes
