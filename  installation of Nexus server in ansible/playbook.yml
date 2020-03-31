@@ -1,0 +1,94 @@
+---
+- hosts: web
+  remote_user: ec2-user
+  tasks:
+  - name: upgrade all packages
+    become: yes
+    yum:
+      name: '*'
+      state: latest
+  - name: download wget
+    become: yes
+    yum:
+      name: wget
+      state: latest
+  - name: Install OpenJDK 1.8
+    become: yes
+    yum:
+      name: java-1.8.0-openjdk.x86_64
+      state: latest
+  - name: ansible create directory 
+    become: yes
+    file:
+      path: /app
+      state: directory
+  - name: put wget in it
+    become: yes
+    get_url:
+       url: https://download.sonatype.com/nexus/3/latest-unix.tar.gz 
+       dest: /app
+  - name: Extract the file
+    become: yes
+    unarchive:
+      src: /app/nexus-3.22.0-02-unix.tar.gz
+      dest: /app
+      remote_src: yes
+  - name: Create user
+    become: yes
+    user:
+      state: "present"
+      name: "nexus"
+  - name: Change file ownership
+    become: yes
+    file: 
+      path: /app/nexus-3.22.0-02
+      owner: "nexus"
+      state: directory
+  - name: Change data ownership
+    become: yes
+    file: 
+     path: /app/sonatype-work
+     owner: "nexus"
+     state: directory
+    
+  - name: Uncomment line from /etc/ssh/sshd_config
+    become: yes
+    lineinfile:
+      dest: /app/nexus-3.22.0-02/bin/nexus.rc
+      regexp: '^#\s*run_as_user.*$'
+      line: 'run_as_user="nexus"'
+#  - name: Touch a file (creates if not present)
+#    win_file:
+#      path: /app/nexus-3.22.0-02 /bin/nexus.vmoptions
+#      state: file
+#  - name: change the default nexus data directory
+#    become: yes
+#    copy:
+#      src: config1.txt
+#      dest: /app/nexus-3.22.0-02 /bin/nexus.vmoptions
+  - name: Copy file conf
+    become: yes
+    copy:
+      src: config.txt
+      dest: /etc/systemd/system/nexus.service
+
+  - name: Register service with chk config system
+    become: yes
+    service: 
+       name: nexus 
+       enabled: yes
+
+  - name: nexus
+    become: yes
+    command: chkconfig nexus on
+
+  - name: Set service start/stop order
+    become: yes
+    service:
+       name: nexus
+       state: started
+
+ 
+  
+
+  
